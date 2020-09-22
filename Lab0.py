@@ -19,17 +19,25 @@ tf.set_random_seed(1618)   # Uncomment for TF1.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Information on dataset.
+Layer_NUM = 3
 NUM_CLASSES = 10
 IMAGE_SIZE = 784
 
 # Use these to set the algorithm to use.
 #ALGORITHM = "guesser"
-ALGORITHM = "custom_net"
-#ALGORITHM = "tf_net"
+#ALGORITHM = "custom_net"
+ALGORITHM = "tf_net"
 
 
 
-
+def kerasANN():
+    model = keras.Sequential()
+    lossType = keras.losses.categorical_crossentropy
+    opt = tf.train.AdamOptimizer()
+    inShape=(784,)
+    model.add(keras.layers.Dense(NUM_CLASSES, input_shape = inShape, activation=tf.nn.softmax))
+    model.compile(optimizer = opt, loss = lossType)
+    return model
 
 class NeuralNetwork_2Layer():
     def __init__(self, inputSize, outputSize, neuronsPerLayer, learningRate = 0.1):
@@ -39,8 +47,19 @@ class NeuralNetwork_2Layer():
         self.lr = learningRate
         self.W1 = np.random.randn(self.inputSize, self.neuronsPerLayer)
         self.W2 = np.random.randn(self.neuronsPerLayer, self.outputSize)
+        self.numLayer = Layer_NUM
+        self.WList = []
 
     # Activation function.
+    def __initializeLayers(self, numLayers):
+        wList  = []
+        wList.append(np.random.randn(self.inputSize, self.neuronsPerLayer))
+        for i in range(numLayers -2):
+            wList.append(np.random.randn(self.neuronsPerLayer, self.neuronsPerLayer))
+        wList.append(np.random.randn(self.neuronsPerLayer, self.outputSize))
+        self.WList = wList
+
+
     def __sigmoid(self, x):
         #pass   #TODO: implement
         return 1 / (1 + np.exp(-x))
@@ -56,7 +75,28 @@ class NeuralNetwork_2Layer():
             yield l[i : i + n]
 
     # Training with backpropagation.
-    def train(self, xVals, yVals, epochs = 500, minibatches = True, mbs = 100):
+    def trainmultilayer(self, xVals, yVals, epochs = 599, minibatches = True, mbs = 100):
+        #pass                                   #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
+        xBatch = self.__batchGenerator(xVals, mbs)
+        yBatch = self.__batchGenerator(yVals, mbs)
+        for i in range(epochs):
+            xVal = next(xBatch)
+            yVal = next(yBatch)
+            lList = self.__forwardmultilayer()
+            l1 , l2 = self.__forward(xVal)
+            loss = yVal - l2
+            l2Delta = loss * self.__sigmoidDerivative(l2)
+            l1Error = np.dot(l2Delta,self.W2.T)
+            l1Delta = l1Error * self.__sigmoidDerivative(l1)
+            l1Adjust = np.dot(xVal.T, l1Delta) * self.lr
+            l2Adjust = np.dot(l1.T,l2Delta) * self.lr
+
+            self.W1 = self.W1 + l1Adjust
+            self.W2 = self.W2 + l2Adjust
+            print(i)
+        print(self.W1.shape)
+        print(self.W2.shape)
+    def train(self, xVals, yVals, epochs = 599, minibatches = True, mbs = 100):
         #pass                                   #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
         xBatch = self.__batchGenerator(xVals, mbs)
         yBatch = self.__batchGenerator(yVals, mbs)
@@ -78,6 +118,12 @@ class NeuralNetwork_2Layer():
         print(self.W1.shape)
         print(self.W2.shape)
     # Forward pass.
+    def __forwardmultilayer(self,input):
+        lList = []
+        lList.append(self.__sigmoid(np.dot(input, self.W1)))
+        for i in range(self.numLayers):
+            lList.append(self.__sigmoid(np.dot(layer1, self.W2)))
+
     def __forward(self, input):
         layer1 = self.__sigmoid(np.dot(input, self.W1))
         layer2 = self.__sigmoid(np.dot(layer1, self.W2))
@@ -142,12 +188,19 @@ def trainModel(data):
     elif ALGORITHM == "custom_net":
         #print("Building and training Custom_NN.")
         nn = NeuralNetwork_2Layer(IMAGE_SIZE,NUM_CLASSES,IMAGE_SIZE)
-        nn.train(xTrain, yTrain)               #TODO: Write code to build and train your custon neural net.
+              #TODO: Write code to build and train your custon neural net.
+        for i in range(10):
+            nn.train(xTrain, yTrain) 
         return nn
     elif ALGORITHM == "tf_net":
-        print("Building and training TF_NN.")
-        print("Not yet implemented.")                   #TODO: Write code to build and train your keras neural net.
-        return None
+        nn = kerasANN()
+        nn.fit(xTrain, yTrain,epochs = 100)
+        #for x,y in zip(xTrain,yTrain):
+         #   print(x.shape)
+           # print(y.shape)
+            #nn.fit(x, y,epochs = 599)
+                         #TODO: Write code to build and train your keras neural net.
+        return nn
     else:
         raise ValueError("Algorithm not recognized.")
 
@@ -163,17 +216,33 @@ def runModel(data, model):
         ans = []
         for entry in data:
             result = model.predict(entry)
+            max = -1
+            maxval = 0
             for i in range(10):
-                if (result[i] > 0.5):
-                    result[i] = 1
-                else :
-                    result[i] = 0
+                if (result[i] > maxval):
+                    max = i
+                    maxval = result[i]
+            result = np.zeros(10)
+            result[max] = 1
             ans.append(result)
         return np.array(ans)
     elif ALGORITHM == "tf_net":
-        print("Testing TF_NN.")
-        print("Not yet implemented.")                   #TODO: Write code to run your keras neural net.
-        return None
+        #print("Testing TF_NN.")
+        #print("Not yet implemented.")                  #TODO: Write code to run your keras neural net.
+        predicts = model.predict(data)
+        ans = []
+        for pre in predicts:
+            result = pre
+            max = -1
+            maxval = 0
+            for i in range(10):
+                if (result[i] > maxval):
+                    max = i
+                    maxval = result[i]
+            result = np.zeros(10)
+            result[max] = 1
+            ans.append(result)
+        return np.array(ans)
     else:
         raise ValueError("Algorithm not recognized.")
 
