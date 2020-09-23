@@ -19,14 +19,14 @@ tf.set_random_seed(1618)   # Uncomment for TF1.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Information on dataset.
-Layer_NUM = 3
+Layer_NUM = 5
 NUM_CLASSES = 10
 IMAGE_SIZE = 784
 
 # Use these to set the algorithm to use.
 #ALGORITHM = "guesser"
-#ALGORITHM = "custom_net"
-ALGORITHM = "tf_net"
+ALGORITHM = "custom_net"
+#ALGORITHM = "tf_net"
 
 
 
@@ -49,6 +49,7 @@ class NeuralNetwork_2Layer():
         self.W2 = np.random.randn(self.neuronsPerLayer, self.outputSize)
         self.numLayer = Layer_NUM
         self.WList = []
+        self.__initializeLayers(self.numLayer)
 
     # Activation function.
     def __initializeLayers(self, numLayers):
@@ -57,6 +58,8 @@ class NeuralNetwork_2Layer():
         for i in range(numLayers -2):
             wList.append(np.random.randn(self.neuronsPerLayer, self.neuronsPerLayer))
         wList.append(np.random.randn(self.neuronsPerLayer, self.outputSize))
+        self.W1 = wList[0]
+        self.W2 = wList[1]
         self.WList = wList
 
 
@@ -75,27 +78,6 @@ class NeuralNetwork_2Layer():
             yield l[i : i + n]
 
     # Training with backpropagation.
-    def trainmultilayer(self, xVals, yVals, epochs = 599, minibatches = True, mbs = 100):
-        #pass                                   #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
-        xBatch = self.__batchGenerator(xVals, mbs)
-        yBatch = self.__batchGenerator(yVals, mbs)
-        for i in range(epochs):
-            xVal = next(xBatch)
-            yVal = next(yBatch)
-            lList = self.__forwardmultilayer()
-            l1 , l2 = self.__forward(xVal)
-            loss = yVal - l2
-            l2Delta = loss * self.__sigmoidDerivative(l2)
-            l1Error = np.dot(l2Delta,self.W2.T)
-            l1Delta = l1Error * self.__sigmoidDerivative(l1)
-            l1Adjust = np.dot(xVal.T, l1Delta) * self.lr
-            l2Adjust = np.dot(l1.T,l2Delta) * self.lr
-
-            self.W1 = self.W1 + l1Adjust
-            self.W2 = self.W2 + l2Adjust
-            print(i)
-        print(self.W1.shape)
-        print(self.W2.shape)
     def train(self, xVals, yVals, epochs = 599, minibatches = True, mbs = 100):
         #pass                                   #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
         xBatch = self.__batchGenerator(xVals, mbs)
@@ -103,7 +85,7 @@ class NeuralNetwork_2Layer():
         for i in range(epochs):
             xVal = next(xBatch)
             yVal = next(yBatch)
-
+            #lList = self.__forwardmultilayer(xVal)
             l1 , l2 = self.__forward(xVal)
             loss = yVal - l2
             l2Delta = loss * self.__sigmoidDerivative(l2)
@@ -112,17 +94,59 @@ class NeuralNetwork_2Layer():
             l1Adjust = np.dot(xVal.T, l1Delta) * self.lr
             l2Adjust = np.dot(l1.T,l2Delta) * self.lr
 
-            self.W1 = self.W1 + l1Adjust
-            self.W2 = self.W2 + l2Adjust
-            print(i)
-        print(self.W1.shape)
-        print(self.W2.shape)
+            self.W1 += l1Adjust
+            self.W2 += l2Adjust
+    def trainmultilayer(self, xVals, yVals, epochs = 599, minibatches = True, mbs = 100):
+        #pass                                   #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
+        xBatch = self.__batchGenerator(xVals, mbs)
+        yBatch = self.__batchGenerator(yVals, mbs)
+        for k in range(599):
+            print(k)
+            xVal = next(xBatch)
+            yVal = next(yBatch)
+            lList = self.__forwardmultilayer(xVal)
+            newW = []
+            '''
+            l1 , l2 = self.__forward(xVal)
+            loss = yVal - l2
+            l2Delta = loss * self.__sigmoidDerivative(l2)
+            l1Error = np.dot(l2Delta,self.W2.T)
+            l1Delta = l1Error * self.__sigmoidDerivative(l1)
+            l1Adjust = np.dot(xVal.T, l1Delta) * self.lr
+            l2Adjust = np.dot(l1.T,l2Delta) * self.lr
+            print("l2 Ad")
+            print(l2Adjust[1])
+            print(l1Error[0][0])
+            '''
+            loss = yVal - lList[self.numLayer -1]
+            Delta = loss * self.__sigmoidDerivative(lList[Layer_NUM -1])
+            adjust = np.dot(lList[self.numLayer -2].T, Delta)* self.lr
+            #print("Mul l2 Ad")
+            #print(adjust[1])
+            newW.append(self.WList[self.numLayer-1]+ adjust)
+            for j in range(self.numLayer-2,0,-1):
+                if (self.numLayer -2 == 0):
+                    break
+                error = np.dot(Delta,self.WList[j+1].T)
+                Delta = error * self.__sigmoidDerivative(lList[j])
+                adjust = np.dot(lList[j-1].T,Delta)*self.lr
+                newW.append(self.WList[j] + adjust)
+            error = np.dot(Delta,self.WList[1].T)
+            Delta = error * self.__sigmoidDerivative(lList[0])
+            l1Adjust = np.dot(xVal.T,Delta)* self.lr
+            newW.append(self.WList[0] + l1Adjust)
+            total = len(self.WList)
+            for i in range(total):
+                self.WList[i] = newW[total - i - 1]
+
+
     # Forward pass.
     def __forwardmultilayer(self,input):
         lList = []
-        lList.append(self.__sigmoid(np.dot(input, self.W1)))
-        for i in range(self.numLayers):
-            lList.append(self.__sigmoid(np.dot(layer1, self.W2)))
+        lList.append(self.__sigmoid(np.dot(input, self.WList[0])))
+        for i in range(1,self.numLayer):
+            lList.append(self.__sigmoid(np.dot(lList[i-1], self.WList[i])))
+        return lList
 
     def __forward(self, input):
         layer1 = self.__sigmoid(np.dot(input, self.W1))
@@ -131,8 +155,12 @@ class NeuralNetwork_2Layer():
 
     # Predict.
     def predict(self, xVals):
-        _, layer2 = self.__forward(xVals)
-        return layer2
+        if (self.numLayer < 2):
+            _, layer2 = self.__forward(xVals)
+            return layer2
+        else:
+            lList = self.__forwardmultilayer(xVals)
+            return lList[self.numLayer-1] 
 
 
 
@@ -189,8 +217,13 @@ def trainModel(data):
         #print("Building and training Custom_NN.")
         nn = NeuralNetwork_2Layer(IMAGE_SIZE,NUM_CLASSES,IMAGE_SIZE)
               #TODO: Write code to build and train your custon neural net.
-        for i in range(10):
-            nn.train(xTrain, yTrain) 
+        if (Layer_NUM < 2):
+            for i in range(10):
+                nn.train(xTrain, yTrain)
+        else:
+            #nn.__initializeLayers(nn.numLayer)
+            for i in range(10):
+                nn.trainmultilayer(xTrain, yTrain)
         return nn
     elif ALGORITHM == "tf_net":
         nn = kerasANN()
@@ -269,7 +302,6 @@ def main():
     model = trainModel(data[0])
     preds = runModel(data[1][0], model)
     evalResults(data[1], preds)
-
 
 
 if __name__ == '__main__':
