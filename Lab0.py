@@ -19,7 +19,7 @@ tf.set_random_seed(1618)   # Uncomment for TF1.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Information on dataset.
-Layer_NUM = 5
+Layer_NUM = 3
 NUM_CLASSES = 10
 IMAGE_SIZE = 784
 
@@ -40,14 +40,14 @@ def kerasANN():
     return model
 
 class NeuralNetwork_2Layer():
-    def __init__(self, inputSize, outputSize, neuronsPerLayer, learningRate = 0.1):
+    def __init__(self, inputSize, outputSize, neuronsPerLayer, numLayer,learningRate = 0.01):
         self.inputSize = inputSize
         self.outputSize = outputSize
         self.neuronsPerLayer = neuronsPerLayer
         self.lr = learningRate
         self.W1 = np.random.randn(self.inputSize, self.neuronsPerLayer)
         self.W2 = np.random.randn(self.neuronsPerLayer, self.outputSize)
-        self.numLayer = Layer_NUM
+        self.numLayer = numLayer
         self.WList = []
         self.__initializeLayers(self.numLayer)
 
@@ -215,7 +215,7 @@ def trainModel(data):
         return None   # Guesser has no model, as it is just guessing.
     elif ALGORITHM == "custom_net":
         #print("Building and training Custom_NN.")
-        nn = NeuralNetwork_2Layer(IMAGE_SIZE,NUM_CLASSES,IMAGE_SIZE)
+        nn = NeuralNetwork_2Layer(IMAGE_SIZE,NUM_CLASSES,2000,3)
               #TODO: Write code to build and train your custon neural net.
         if (Layer_NUM < 2):
             for i in range(10):
@@ -284,9 +284,22 @@ def runModel(data, model):
 def evalResults(data, preds):   #TODO: Add F1 score confusion matrix here.
     xTest, yTest = data
     acc = 0
+    f1 = np.zeros((10,10))
     for i in range(preds.shape[0]):
         if np.array_equal(preds[i], yTest[i]):   acc = acc + 1
-    print(preds[0],yTest[0])
+        tempp = 0
+        tempy = 0
+        for j in range(10):
+            if (preds[i][j] == 1):
+                tempp = j
+                break
+        for j in range(10):
+            if (yTest[i][j] == 1):
+                tempy = j
+                break
+        f1[tempp][tempy] +=1
+    print("confusion matrix")
+    print(f1)
     accuracy = acc / preds.shape[0]
     print("Classifier algorithm: %s" % ALGORITHM)
     print("Classifier accuracy: %f%%" % (accuracy * 100))
