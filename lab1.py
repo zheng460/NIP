@@ -1,10 +1,12 @@
 
 import os
+import sys
 import numpy as np
 import tensornets as nets
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
+import matplotlib.pyplot as plt
 import random
 
 
@@ -20,42 +22,52 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 #ALGORITHM = "tf_net"
 ALGORITHM = "tf_conv"
 
-#DATASET = "mnist_d"
+DATASET = "mnist_d"
+NUM_CLASSES = 10
+IH = 0
+IW = 0
+IZ = 0
+IS = 0
 #DATASET = "mnist_f"
 #DATASET = "cifar_10"
 #DATASET = "cifar_100_f"
-DATASET = "cifar_100_c"
-
-if DATASET == "mnist_d":
-    NUM_CLASSES = 10
-    IH = 28
-    IW = 28
-    IZ = 1
-    IS = 784
-elif DATASET == "mnist_f":
-    NUM_CLASSES = 10
-    IH = 28
-    IW = 28
-    IZ = 1
-    IS = 784
-elif DATASET == "cifar_10":
-    NUM_CLASSES = 10
-    IH = 32
-    IW = 32
-    IZ = 3
-    IS = 784
-elif DATASET == "cifar_100_f":
-    NUM_CLASSES = 100
-    IH = 32
-    IW = 32
-    IZ = 3
-    IS = 784                                 # TODO: Add this case.
-elif DATASET == "cifar_100_c":
-    NUM_CLASSES = 100
-    IH = 32
-    IW = 32
-    IZ = 3
-    IS = 784                                 # TODO: Add this case.
+#DATASET = "cifar_100_c"
+def resetparameter():
+    global NUM_CLASSES
+    global IH
+    global IW
+    global IZ
+    global IS
+    if DATASET == "mnist_d":
+        NUM_CLASSES = 10
+        IH = 28
+        IW = 28
+        IZ = 1
+        IS = 784
+    elif DATASET == "mnist_f":
+        NUM_CLASSES = 10
+        IH = 28
+        IW = 28
+        IZ = 1
+        IS = 784
+    elif DATASET == "cifar_10":
+        NUM_CLASSES = 10
+        IH = 32
+        IW = 32
+        IZ = 3
+        IS = 784
+    elif DATASET == "cifar_100_f":
+        NUM_CLASSES = 100
+        IH = 32
+        IW = 32
+        IZ = 3
+        IS = 784                                 # TODO: Add this case.
+    elif DATASET == "cifar_100_c":
+        NUM_CLASSES = 100
+        IH = 32
+        IW = 32
+        IZ = 3
+        IS = 784                                 # TODO: Add this case.
 
 
 #=========================<Classifier Functions>================================
@@ -83,6 +95,9 @@ def buildTFNeuralNet(x, y, eps = 6):
 
 def buildTFConvNet(x, y, eps = 10, dropout = True, dropRate = 0.2):
     #TODO: Implement a CNN here. dropout option is required.
+    #cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath="./weight",
+                                                   #  save_weights_only=True,
+                                                    # verbose=1)
     model = keras.Sequential()
     inShape = (IH, IW, IZ)
     lossType = keras.losses.categorical_crossentropy
@@ -95,7 +110,7 @@ def buildTFConvNet(x, y, eps = 10, dropout = True, dropRate = 0.2):
         model.add(keras.layers.Dense(128, activation="relu"))
         model.add(keras.layers.Dense(NUM_CLASSES, activation="softmax"))
         model.compile(optimizer=opt, loss=lossType,metrics=["accuracy"])
-        model.fit(x,y,epochs=200)
+        model.fit(x,y,epochs=200)#200
     elif DATASET == "cifar_10":
         VGG16_MODEL = tf.keras.applications.VGG19(input_shape=(32, 32, 3),
                                                   include_top=False,
@@ -111,8 +126,8 @@ def buildTFConvNet(x, y, eps = 10, dropout = True, dropRate = 0.2):
         model.compile(optimizer=opt,
                       loss=tf.keras.losses.categorical_crossentropy,
                       metrics=["accuracy"])
-        print(x.shape)
-        history = model.fit(x, y, epochs=5)
+        #print(x.shape)
+        history = model.fit(x, y, epochs=5)#5
     elif DATASET == "cifar_100_f":
         VGG16_MODEL = tf.keras.applications.VGG19(input_shape=(32, 32, 3),
                                                   include_top=False,
@@ -128,8 +143,8 @@ def buildTFConvNet(x, y, eps = 10, dropout = True, dropRate = 0.2):
         model.compile(optimizer=opt,
                       loss=tf.keras.losses.categorical_crossentropy,
                       metrics=["accuracy"])
-        print(x.shape)
-        history = model.fit(x, y, epochs=15)
+        #print(x.shape)
+        history = model.fit(x, y, epochs=15)#15
     elif DATASET == "cifar_100_c":
         VGG16_MODEL = tf.keras.applications.VGG19(input_shape=(32, 32, 3),
                                                   include_top=False,
@@ -145,8 +160,8 @@ def buildTFConvNet(x, y, eps = 10, dropout = True, dropRate = 0.2):
         model.compile(optimizer=opt,
                       loss=tf.keras.losses.categorical_crossentropy,
                       metrics=["accuracy"])
-        print(x.shape)
-        history = model.fit(x, y, epochs=20)
+        #print(x.shape)
+        history = model.fit(x, y, epochs=20)#20
     return model
 #=========================<Pipeline Functions>==================================
 
@@ -168,11 +183,11 @@ def getRawData():
         (xTrain, yTrain), (xTest, yTest) = tf.keras.datasets.cifar100.load_data(label_mode="coarse")
     else:
         raise ValueError("Dataset not recognized.")
-    print("Dataset: %s" % DATASET)
-    print("Shape of xTrain dataset: %s." % str(xTrain.shape))
-    print("Shape of yTrain dataset: %s." % str(yTrain.shape))
-    print("Shape of xTest dataset: %s." % str(xTest.shape))
-    print("Shape of yTest dataset: %s." % str(yTest.shape))
+    #print("Dataset: %s" % DATASET)
+    #print("Shape of xTrain dataset: %s." % str(xTrain.shape))
+    #print("Shape of yTrain dataset: %s." % str(yTrain.shape))
+    #print("Shape of xTest dataset: %s." % str(xTest.shape))
+    #print("Shape of yTest dataset: %s." % str(yTest.shape))
     return ((xTrain, yTrain), (xTest, yTest))
 
 
@@ -187,10 +202,10 @@ def preprocessData(raw):
         xTestP = xTest.reshape((xTest.shape[0], IH, IW, IZ))
     yTrainP = to_categorical(yTrain, NUM_CLASSES)
     yTestP = to_categorical(yTest, NUM_CLASSES)
-    print("New shape of xTrain dataset: %s." % str(xTrainP.shape))
-    print("New shape of xTest dataset: %s." % str(xTestP.shape))
-    print("New shape of yTrain dataset: %s." % str(yTrainP.shape))
-    print("New shape of yTest dataset: %s." % str(yTestP.shape))
+    #print("New shape of xTrain dataset: %s." % str(xTrainP.shape))
+    #print("New shape of xTest dataset: %s." % str(xTestP.shape))
+    #print("New shape of yTrain dataset: %s." % str(yTrainP.shape))
+    #print("New shape of yTest dataset: %s." % str(yTestP.shape))
     return ((xTrainP, yTrainP), (xTestP, yTestP))
 
 
@@ -242,19 +257,73 @@ def evalResults(data, preds):
         if np.array_equal(preds[i], yTest[i]):   acc = acc + 1
     accuracy = acc / preds.shape[0]
     print("Classifier algorithm: %s" % ALGORITHM)
+    print("Dataset %s" %DATASET)
     print("Classifier accuracy: %f%%" % (accuracy * 100))
     print()
+    return accuracy*100
+def plot_result(accurList):
+    fig = plt.figure()
+    names = ["mnist_d","mnist_f","cifar_10","cifar_100_f","cifar_100_c"]
+    y_pos = np.arange(len(accurList))
+    plt.bar(y_pos, accurList, align='center', alpha=0.5)
+    plt.xticks(y_pos, names)
+    plt.ylabel('Accuracy')
+
+    plt.show()
+    if ALGORITHM == "tf_conv":
+        fig.savefig(fname="./CNN_Accuracy_Plot.pdf")
+    else:
+        fig.savefig(fname="./ANN_Accuracy_Plot.pdf")
+
 
 
 
 #=========================<Main>================================================
 
 def main():
-    raw = getRawData()
-    data = preprocessData(raw)
-    model = trainModel(data[0])
-    preds = runModel(data[1][0], model)
-    evalResults(data[1], preds)
+    datasets = ["mnist_d","mnist_f","cifar_10","cifar_100_f","cifar_100_c"]
+    global DATASET
+    save_mode = False
+    sysin = sys.stdin
+    accurList = []
+    print("Do you want to load the model ?")
+    for line in sysin:
+        if 'yes' == line.strip():
+            for dataset in datasets:
+                DATASET = dataset
+                resetparameter()
+                raw = getRawData()
+                data = preprocessData(raw)
+                model = keras.models.load_model("./" + dataset)
+                preds = runModel(data[1][0], model)
+                accuracy = evalResults(data[1], preds)
+                accurList.append(accuracy)
+            plot_result(accurList)
+            exit(0)
+        if 'no' == line.strip():
+            break
+    print("Please enter yes or no to enable or disable save mode")
+    for line in sysin:
+        if 'yes' == line.strip():
+            save_mode = True
+            break
+        if 'no' == line.strip():
+            break
+
+    for dataset in datasets:
+        DATASET = dataset
+        resetparameter()
+        print(dataset)
+        raw = getRawData()
+        data = preprocessData(raw)
+        model = trainModel(data[0])
+        preds = runModel(data[1][0], model)
+        accuracy = evalResults(data[1], preds)
+        if (save_mode):
+            model.save("./"+dataset)
+        print()
+        accurList.append(accuracy)
+    plot_result(accurList)
 
 
 
